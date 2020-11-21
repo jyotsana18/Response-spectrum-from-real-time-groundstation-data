@@ -1,0 +1,71 @@
+from matplotlib import pyplot as plt
+import math
+import numpy as np
+import pandas as pd
+dz=pd.read_excel(r'ENTER INPUT FILE',sheet_name=None)   
+allsheetnames= dz.keys()
+s=0
+
+
+for sheetname in allsheetnames:
+    print("sheetname=",sheetname)
+    s=s+1
+    if(s>=6):
+        df=dz.get(sheetname)
+        acc = list(df['acc_m/s^2']) 
+        acc1=[abs(number) for number in acc]
+        ac=max(acc1)
+
+        disp = list(df['disp(m)'])
+        disp1=[abs(number) for number in disp]
+        dis=max(disp1)
+
+
+        x=np.array(df['acc_m/s^2'])
+        print("x",x)
+        y=np.array(df['vel_m/s'])
+        z=np.array(df['disp(m)'])
+
+        wbar=round(math.sqrt(ac/dis),3)
+        print("wbar",wbar)
+        n=np.size(x,0)          # size along row
+        dt=0.02
+        d=0.06
+        T=np.arange(0.1,10,0.01)
+        t=np.size(T,0)        # size along row
+
+
+        spec_acc=[]
+        u=np.zeros((n+1,t))
+        m=np.zeros((n+1,t))
+        time=[]
+
+   
+        for j in range(0, t):
+            fd=[]
+            dc=[]
+            #print("T[j]",round(T[j],2))
+            w=round(2*math.pi/round(T[j],2),3)
+
+            #print("w=",w)
+            At=(1/dt**2)+(2*d*w/dt)
+
+            for i in range (0,n):
+                a=(-1*x[i])+(2*y[i]*d*(wbar**2)/w)+(wbar**2*(z[i]))
+                b=(-1*w**2*m[i,j])+(2*d*w*m[i,j])/(dt)
+                c=(2*m[i,j]-m[i-1,j])/(dt**2)
+                m[i+1,j]=(a+b+c)/At
+                u[i+1,j]=((m[i+1,j]*w**2)-(z[i]*wbar**2))/(w**2+wbar**2)
+                dc.append(np.abs(u[i+1,j]))
+            maxU=round(max(dc),4)
+            PSA=maxU*(2*math.pi/T[j])**2
+            spec_acc.append(PSA/ac)
+            time.append(T[j])  
+
+        plt.plot(time,spec_acc)
+        plt.xlabel("Period(in sec)")
+        plt.ylabel("PSA/PGA")
+        plt.title('Response spectrum')
+        plt.show()
+    
+    sheetname=sheetname+str(1)
